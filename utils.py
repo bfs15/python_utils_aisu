@@ -3,6 +3,7 @@ from datetime import datetime
 import importlib
 import json
 import logging
+import os
 from typing import Iterable, Union
 
 
@@ -55,13 +56,14 @@ class FileWriter:
         if json_write:
             ext = "json"
 
+        d = self.directory
         if timestamp:
             d = self.directory_timestamped if self.directory_timestamped is not None else self.directory
             name = get_timestamp_filename(
                 name, directory=d, ext=ext, timestamp=timestamp)
         else:
-            name = f"{self.directory}/{name}.{ext}"
-
+            name = f"{d}/{name}.{ext}"
+        os.makedirs(d, exist_ok=True)
         with open(name, mode="w", encoding="utf-8") as f:
             if json_write:
                 json.dump(obj, f, ensure_ascii=False, indent=2)
