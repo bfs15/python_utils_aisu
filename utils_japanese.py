@@ -1,6 +1,7 @@
 
 import re
 import pykakasi
+import romajitable
 
 kakasi = pykakasi.kakasi()
 
@@ -29,3 +30,12 @@ def convert_japanese_to_romaji(text, kanji_only=False):
 	if kanji_only:
 		_japanese_text_regex = japanese_kanji_text_regex
 	return re.sub(_japanese_text_regex, replace_japanese_with_romaji, text)
+
+english_text_regex = fr'[A-Za-z_\-]+'
+
+def replace_english_with_katakana(match):
+	result = romajitable.to_kana(match.group())
+	return result.katakana
+
+def english_to_katakana(text):
+	return re.sub(english_text_regex, replace_english_with_katakana, text)
