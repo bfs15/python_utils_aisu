@@ -13,10 +13,16 @@ def reload_lib(lib):
 def get_timestamp():
     return datetime.now().isoformat(timespec='seconds').replace(':', '_')
 
-def get_timestamp_name(name, directory, ext="json"):
-    now = get_timestamp()
-    name = f"{directory}/{name}_{now}.{ext}"
-    return name
+def get_timestamp_filename(name, directory, ext="json", timestamp=None, format="{directory}/{name}_{timestamp}.{ext}"):
+    if not isinstance(timestamp, str):
+        timestamp = get_timestamp()
+    filename = f"{directory}/{name}_{timestamp}.{ext}".format(
+        directory=directory,
+        name=name,
+        timestamp=timestamp,
+        ext=ext,
+    )
+    return filename
 
 
 def string_parameters(parameters):
@@ -51,10 +57,8 @@ class FileWriter:
 
         if timestamp:
             d = self.directory_timestamped if self.directory_timestamped is not None else self.directory
-            if isinstance(timestamp, str):
-                name = f"{d}/{name}-{timestamp}.{ext}"
-            else:
-                name = get_timestamp_name(name, directory=d, ext=ext)
+            name = get_timestamp_filename(
+                name, directory=d, ext=ext, timestamp=timestamp)
         else:
             name = f"{self.directory}/{name}.{ext}"
 
@@ -85,3 +89,13 @@ def binary_search(minimum, maximum, func):
         else:
             minimum = mid + 1
     return max(mi, min(ma, minimum))
+
+
+def text_lines_collate(a, b):
+    a_list = a.split('\n')
+    b_list = b.split('\n')
+    output_list = []
+    for i in range(len(a_list)):
+        output_list.append(a_list[i])
+        output_list.append(b_list[i])
+    return '\n'.join(output_list)
