@@ -39,10 +39,10 @@ def save_to_json(dict, filename):
 class FileWriter:
     def __init__(self,
         directory,
-        timestamp_directory,
+        directory_timestamped,
     ):
         self.directory = directory
-        self.timestamp_directory = timestamp_directory
+        self.directory_timestamped = directory_timestamped
 
     def write(self, obj, name, timestamp: Union[str, bool] = False, json_write=False):
         ext = "log"
@@ -50,7 +50,7 @@ class FileWriter:
             ext = "json"
 
         if timestamp:
-            d = self.timestamp_directory if self.timestamp_directory is not None else directory
+            d = self.directory_timestamped if self.directory_timestamped is not None else self.directory
             if isinstance(timestamp, str):
                 name = f"{d}/{name}-{timestamp}.{ext}"
             else:
