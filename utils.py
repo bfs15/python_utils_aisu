@@ -4,6 +4,7 @@ import importlib
 import json
 import logging
 import os
+import re
 from typing import Iterable, Union
 
 
@@ -101,3 +102,25 @@ def text_lines_collate(a, b):
         output_list.append(a_list[i])
         output_list.append(b_list[i])
     return '\n'.join(output_list)
+
+
+def camel_case_to_spaces(text):
+    # Use regular expression to split camel case words
+    spaced_text = re.sub(r'([a-z])([A-Z])', r'\1 \2', text)
+    # Convert to lowercase and remove leading/trailing spaces
+    spaced_text = spaced_text.lower().strip()
+    return spaced_text
+
+def merge_dictionaries(*dicts):
+    """
+    N dictionaries, some values are defined, some are "None".
+    merge these directories **recursively**, giving priority to later ones.
+    """
+    result = {}
+    for dictionary in dicts:
+        for key, value in dictionary.items():
+            if isinstance(value, dict) and key in result and isinstance(result[key], dict):
+                result[key] = merge_dictionaries(result[key], value)
+            else:
+                result[key] = value
+    return result
