@@ -1,8 +1,25 @@
 
+import logging
+
+loggingDefaultFormat = '%(asctime)s %(levelname)s %(filename)s:%(lineno)d(%(process)d) `"%(message)s"`'
+loggingDefaultFormatter = logging.Formatter(loggingDefaultFormat)
+
+def loggingSetFormatter(fh_formatter = loggingDefaultFormatter):        
+    fh = logging.StreamHandler()
+    fh.setFormatter(fh_formatter)
+
+def loggingGetLogger(name, fh = logging.StreamHandler(), fh_formatter = loggingDefaultFormatter):
+    logger = logging.getLogger(name)
+    fh.setFormatter(fh_formatter)
+    logger.addHandler(fh)
+    return logger
+
+# logger = loggingGetLogger(__name__)
+# logger.setLevel('WARN')
+
 from datetime import datetime
 import importlib
 import json
-import logging
 import os
 import re
 from typing import Iterable, Union
@@ -52,7 +69,7 @@ class FileWriter:
         self.directory = directory
         self.directory_timestamped = directory_timestamped
 
-    def write(self, obj, name, timestamp: Union[str, bool] = False, json_write=False):
+    def write(self, obj, name, timestamp: Union[str, bool] = False, json_write=False, raise_exception=True):
         ext = "log"
         if json_write:
             ext = "json"
@@ -70,16 +87,21 @@ class FileWriter:
                 json.dump(obj, f, ensure_ascii=False, indent=2)
             else:
                 if isinstance(obj, Iterable):
+                    exceptions = []
                     for o in obj:
                         try:
                             f.write(str(o) + "\n\n")
                         except Exception as e:
-                            logging.exception("write error")
+                            exceptions.append(e)
+                    if exceptions:
+                        if raise_exception:
+                            raise Exception(exceptions)
                 else:
                     try:
                         f.write(str(obj))
                     except:
-                        pass
+                        if raise_exception:
+                            raise
 
 
 
@@ -124,3 +146,20 @@ def merge_dictionaries(*dicts):
             else:
                 result[key] = value
     return result
+
+
+def dict_diff(dicts):
+    diff = {}
+    keys = set()
+    for d in dicts:
+        keys |= set(d.keys())
+
+    for key in keys:
+        values = set()
+        for d in dicts:
+            val = d.get(key)
+            if val is not None:
+                values.add(val)
+        if len(values) > 1:
+            diff[key] = values
+    return diff
