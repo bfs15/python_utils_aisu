@@ -104,6 +104,108 @@ class FileWriter:
                             raise
 
 
+from dataclasses import dataclass
+from typing import Dict
+
+class Buildable:
+    """
+    So you can build classes by defining just their name.
+    ## Example
+    ```python
+    transitions = {
+        {'name': 'linear', 'kwargs': {}}
+    }
+    for t in transitions:
+        built_transition = Transition.build(**t)
+
+    class Transition(Buildable):
+        ...
+    class Transition_linear:
+        ...
+    class Transition_bezier:
+        ...
+
+    Transition.register_classes({
+        'Transition_linear': Transition_linear,
+        'Transition_bezier': Transition_bezier,
+    })
+    ```
+    """
+    classes: Dict[str, type] | None = None
+
+    @classmethod
+    def register_classes(cls, classes_dict):
+        if not cls.classes:
+            cls.classes = {}
+        cls.classes = {**cls.classes, **classes_dict}
+
+    @classmethod
+    def set_classes(cls, classes_dict):
+        cls.classes = classes_dict
+
+    @classmethod
+    def build(cls, name, **kwargs):
+        if not cls.classes:
+            raise NotImplementedError("")
+        class_name = cls.__name__
+        c = cls.classes[f"{class_name}_{name}"]
+        if c:
+            return c(**kwargs)
+        raise NotImplementedError()
+
+    def getName(self):
+        class_name = '_'.join(self.__class__.__name__.split('_')[1:])
+        return class_name
+
+
+import time
+from dataclasses import dataclass
+
+@dataclass
+class Cooldown:
+    seconds: float = 0.0
+    start: float = 0.0
+
+    def isStarted(self):
+        return self.start != 0
+    
+    def clear(self):
+        self.start = 0
+
+    def trigger(self, time_counter=None, check=True):
+        triggered = 0
+        if not time_counter:
+            time_counter = time.perf_counter()
+        if check:
+            triggered = self.check(time_counter)
+            if triggered < 1:
+                return triggered
+        self.start = time_counter
+        self.end = time_counter + self.seconds
+        return triggered
+
+    def elapsed(self, time_counter = None):
+        if not time_counter:
+            time_counter = time.perf_counter()
+        if self.start == 0.0:
+            return 0.0, time_counter
+        elapsed  = time_counter - self.start
+        return elapsed, time_counter
+
+    def check(self, time_counter = None):
+        # returns how many triggers happened
+        elapsed, _  = self.elapsed(time_counter)
+        return (elapsed / self.seconds)
+    
+    def getEnd(self):
+        return  self.start + self.seconds
+    
+    def to_end(self, time_counter = None):
+        if not time_counter:
+            time_counter = time.perf_counter()
+        elapsed, _  = self.elapsed(time_counter)
+        return  self.seconds - elapsed
+
 
 def binary_search(minimum, maximum, func):
     mi, ma = minimum, maximum
