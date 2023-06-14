@@ -1,5 +1,6 @@
 
 import logging
+from xml.dom.pulldom import default_bufsize
 
 loggingDefaultFormat = '%(asctime)s %(levelname)s %(filename)s:%(lineno)d(%(process)d) `"%(message)s"`'
 loggingDefaultFormatter = logging.Formatter(loggingDefaultFormat)
@@ -9,6 +10,13 @@ def loggingSetFormatter(fh_formatter = loggingDefaultFormatter):
     fh.setFormatter(fh_formatter)
 
 def loggingGetLogger(name, fh = logging.StreamHandler(), fh_formatter = loggingDefaultFormatter):
+    """
+    ```python
+    from python_utils_aisu import utils
+    logger = utils.loggingGetLogger(__name__)
+    logger.setLevel('INFO')
+    ```
+    """
     logger = logging.getLogger(name)
     fh.setFormatter(fh_formatter)
     logger.addHandler(fh)
@@ -22,7 +30,7 @@ import importlib
 import json
 import os
 import re
-from typing import Iterable, Union
+from typing import Any, Iterable, Union
 
 
 def reload_lib(lib):
@@ -160,6 +168,8 @@ class Buildable:
 
 import time
 from dataclasses import dataclass
+import random
+import copy
 
 @dataclass
 class Cooldown:
@@ -168,44 +178,145 @@ class Cooldown:
 
     def isStarted(self):
         return self.start != 0
+
+    def isFinished(self, time_counter = None):
+        return not self.isStarted() or self.elapsed(time_counter) >= self.seconds
     
     def clear(self):
         self.start = 0
 
+    def doStart(self, time_counter):
+        self.start = time_counter
+        return self.nextEnd()
+
     def trigger(self, time_counter=None, check=True):
         triggered = 0
+        if not self.isStarted():
+            self.doStart(time_counter)
+            return 0
         if not time_counter:
             time_counter = time.perf_counter()
         if check:
             triggered = self.check(time_counter)
             if triggered < 1:
                 return triggered
-        self.start = time_counter
-        self.end = time_counter + self.seconds
+        self.doStart(time_counter)
         return triggered
 
     def elapsed(self, time_counter = None):
         if not time_counter:
             time_counter = time.perf_counter()
         if self.start == 0.0:
-            return 0.0, time_counter
+            return 0.0
         elapsed  = time_counter - self.start
-        return elapsed, time_counter
+        return elapsed
+    
+    def elapsed_percent(self, time_counter = None):
+        return self.check(time_counter)
 
     def check(self, time_counter = None):
-        # returns how many triggers happened
-        elapsed, _  = self.elapsed(time_counter)
-        return (elapsed / self.seconds)
-    
-    def getEnd(self):
-        return  self.start + self.seconds
-    
-    def to_end(self, time_counter = None):
+        """returns how many triggers happened (or percentage of completion)"""
         if not time_counter:
             time_counter = time.perf_counter()
-        elapsed, _  = self.elapsed(time_counter)
-        return  self.seconds - elapsed
+        elapsed = self.elapsed(time_counter)
+        duration = self.getDuration()
+        if duration == 0.0:
+            return 1.0
+        return (elapsed / duration)
+    
+    def nextEnd(self):
+        return self.start + self.seconds
+    
+    def getEnd(self):
+        return self.start + self.seconds
+    
+    def getDuration(self):
+        return self.seconds
 
+    def getRemaining(self, time_counter = None):
+        if not time_counter:
+            time_counter = time.perf_counter()
+        elapsed = self.elapsed(time_counter)
+        return self.getDuration() - elapsed
+
+    def elapsed_remaining(self, time_counter = None):
+        if not time_counter:
+            time_counter = time.perf_counter()
+        elapsed = self.elapsed(time_counter)
+        remaining = self.getDuration() - elapsed
+        return elapsed, remaining
+
+    def scale(self, scalar: float):
+        """scale the remaining time only, not total"""
+        if not self.isStarted() or scalar == 1.0:
+            self.seconds *= scalar
+
+        time_counter = time.perf_counter()
+        elapsed, remaining = self.elapsed_remaining(time_counter)
+
+        to_end = elapsed + remaining * scalar
+        duration = self.getDuration() * scalar
+        end = self.start + to_end
+        start = end - duration
+        self.seconds *= scalar
+        self.start = start
+
+    def __mul__(self, scalar: float):
+        scaled = copy.deepcopy(self)
+        scaled.scale(scalar)
+        return scaled
+
+    def __rmul__(self, scalar: float):
+        scaled = copy.deepcopy(self)
+        scaled.scale(scalar)
+        return scaled
+
+    @staticmethod
+    def build(interval: float | Dict[str, float] | 'Cooldown' | None, C: type | None = None) -> Any:
+        if not C:
+            C = Cooldown
+        if isinstance(interval, dict):
+            if 'time' in interval:
+                interval['seconds'] = interval['time']
+                del interval['time']
+            interval = C(**interval)
+        elif isinstance(interval, float) or isinstance(interval, int):
+            interval = C(interval)
+        elif not interval:
+            return C()
+        return interval
+
+
+@dataclass
+class CooldownVarU(Cooldown):
+    """Cooldown but with random uniform variance based on `self.variance`."""
+    variance: float = 0.0
+    random_offset: float = 0.0
+    def nextEnd(self):
+        self.random_offset = random.uniform(-self.variance, self.variance)
+        return self.start + self.getDuration()
+
+    def getEnd(self):
+        return self.start + self.getDuration()
+
+    def getDuration(self):
+        return self.seconds + self.random_offset
+    
+    
+    def scale(self, scalar: float):
+        """scale the remaining time only, not total"""
+        super().scale(scalar)
+        self.variance *= scalar
+
+    @staticmethod
+    def build(interval: float | Dict[str, float] | 'Cooldown' | None, C: type | None = None) -> 'CooldownVarU':
+        return Cooldown.build(interval, CooldownVarU)
+
+
+import string
+
+def get_random_string(size):
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=size))
 
 def binary_search(minimum, maximum, func):
     mi, ma = minimum, maximum
