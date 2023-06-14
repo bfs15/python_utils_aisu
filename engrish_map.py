@@ -618,20 +618,29 @@ english_to_engrish_custom_map = {
     'the': 'セ',
     'sis': 'シス',
 
+    # watts
+    'tt': 'ット',
+    r't\b': 'ト',
+    r'ts\b': 'トス',
     # didn't figure out general separations
     'wine': 'ワイン',
     'rape': 'レイプ',
     r'ward\b': 'ワード',
     r'wards\b': 'ワードズ',
-    # watts
-    'tt': 'ット',
-    r't\b': 'ト',
-    r'ts\b': 'トス',
+
+    r'onee-chan': 'お姉ちゃん',
+    r'one-chan': 'お姉ちゃん',
+    r'onii-chan': 'お兄ちゃん',
+    r'oni-chan': 'お兄ちゃん',
+    r'onee chan': 'お姉ちゃん',
+    r'one chan': 'お姉ちゃん',
+    r'onii chan': 'お兄ちゃん',
+    r'oni chan': 'お兄ちゃん',
 
     r'\btts\b': 'ティーティーエス',
     # 's': 'エス',
     't': 'ティー',
-    
+
     r'\btv\b': 'ティーティーエス',
     
     r'\brpg\b': 'アールーピージー',
