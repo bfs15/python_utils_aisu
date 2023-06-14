@@ -28,8 +28,8 @@ re_japanese = fr'{re_kanji}{re_hiragana}{re_katakana}{re_katakana_half_and_punct
 re_japanese_plus = fr'[{re_japanese}]+'
 re_japanese_kanji_plus = fr'[{re_kanji}]+'
 
-
-re_voiced_plus = fr'[A-Za-z0-9{re_japanese}]+'
+re_japanese_voiced = fr'{re_kanji}{re_hiragana}{re_katakana}'
+re_voiced_plus = fr'[A-Za-z0-9{re_japanese_voiced}]+'
 re_voiced_plus_c = re.compile(re_voiced_plus, re.U)
 
 keep_orig = {"「", "！", "」"}
