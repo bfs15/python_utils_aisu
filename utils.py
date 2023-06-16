@@ -37,8 +37,8 @@ def reload_lib(lib):
     importlib.reload(lib)
 
 
-def get_timestamp():
-    return datetime.now().isoformat(timespec='seconds').replace(':', '_')
+def get_timestamp(timespec='seconds'):
+    return datetime.now().isoformat(timespec=timespec).replace(':', '_')
 
 def get_timestamp_filename(name, directory, ext="json", timestamp=None, format="{directory}/{name}_{timestamp}.{ext}"):
     if not isinstance(timestamp, str):
