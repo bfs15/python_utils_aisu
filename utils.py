@@ -190,10 +190,10 @@ class Cooldown:
         return self.nextEnd()
 
     def trigger(self, time_counter=None, check=True):
-        triggered = 0
+        triggered = 0.0
         if not self.isStarted():
             self.doStart(time_counter)
-            return 0
+            return 0.0
         if not time_counter:
             time_counter = time.perf_counter()
         if check:
@@ -203,8 +203,8 @@ class Cooldown:
         self.doStart(time_counter)
         return triggered
 
-    def elapsed(self, time_counter = None):
-        if not time_counter:
+    def elapsed(self, time_counter: float | None = None):
+        if time_counter is None:
             time_counter = time.perf_counter()
         if self.start == 0.0:
             return 0.0
